@@ -8,8 +8,6 @@ on:
 jobs:
   scrape-and-process:
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.49.0-noble # Pre-built with browsers to save installation time
     
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -18,9 +16,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install lsb-release
-        run: apt-get update && apt-get install -y lsb-release
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -32,6 +27,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install supabase
+
+      - name: Install Playwright Browsers
+        run: playwright install chromium --with-deps
 
       - name: Run Pipeline
         run: python main.py
