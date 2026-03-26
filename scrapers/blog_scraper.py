@@ -30,18 +30,23 @@ async def scrape_lab_blogs():
         # Anthropic
         try:
             await page.goto("https://www.anthropic.com/news", timeout=30000)
-            # Using specific attribute selectors as found by browser agent
-            items = await page.query_selector_all('a[class*="listItem"]')
-            for item in items[:3]:
-                title_span = await item.query_selector('span:last-child')
-                title = await title_span.inner_text() if title_span else await item.inner_text()
+            # Find all links in the news section that look like articles
+            items = await page.query_selector_all('a[href^="/news/"]')
+            for item in items:
+                title_el = await item.query_selector('h3, h2, span:not([class*="tag"])')
+                if not title_el: continue
+                
+                title = await title_el.inner_text()
                 href = await item.get_attribute('href')
-                if title and href:
+                
+                # Filter out generic tags or short strings
+                if title and len(title.strip()) > 10 and href:
                     results.append({
                         "title": title.strip(),
-                        "url": "https://www.anthropic.com" + href if href.startswith('/') else href,
+                        "url": "https://www.anthropic.com" + href,
                         "source": "Anthropic Blog"
                     })
+                if len(results) >= 10: break
         except Exception as e: print(f"Anthropic error: {e}")
 
         await browser.close()
