@@ -24,18 +24,16 @@ def process_article(article):
     Technical Content: {article.get('content', 'No detailed content available.')}
     
     Instructions:
-    1. Categorize into one of: LLMs, Robotics, Agents, Hardware.
+    1. Categorize into EXACTLY one of: LLMs, Robotics, Agents, Hardware.
     2. Provide a 'Quick Take' summary under 150 characters.
     3. Calculate 'Hype Meter' score (1-10).
-       Logic: 
-       - 10: Marketing fluff, vague promises, no technical data.
-       - 1: Grounded technical breakthrough, specific metrics, reproducible results.
-       - Compare the Headline claims against the Technical Content. If the headline is much more sensational than the content, the score should be higher.
     4. Label: "Pure Signal" (1-3), "Balanced" (4-7), "Maximum Hype" (8-10).
+    
+    Return ONLY a valid JSON object.
     
     JSON format:
     {{
-        "category": "...",
+        "category": "One of [LLMs, Robotics, Agents, Hardware]",
         "summary": "...",
         "hype_score": 1-10,
         "hype_label": "..."
@@ -44,21 +42,29 @@ def process_article(article):
     
     try:
         response = model.generate_content(prompt)
-        # Attempt to parse JSON from the response text
-        # Simple extraction for now
         text = response.text
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0]
+        
+        # More robust JSON extraction
+        import re
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            enrichment = json.loads(json_str)
             
-        enrichment = json.loads(text.strip())
-        article.update(enrichment)
+            # Ensure category is one of the valid ones
+            valid_categories = ["LLMs", "Robotics", "Agents", "Hardware"]
+            if enrichment.get("category") not in valid_categories:
+                enrichment["category"] = "LLMs" 
+                
+            article.update(enrichment)
+        else:
+            raise ValueError("No JSON found in response")
+            
     except Exception as e:
-        print(f"Error processing article '{article['title']}': {e}")
+        print(f"❌ Error processing article '{article['title']}': {e}")
         # Default/Fallback
         article.update({
-            "category": "Unknown",
+            "category": "LLMs",
             "summary": article['title'][:147] + "...",
             "hype_score": 5,
             "hype_label": "Balanced"
