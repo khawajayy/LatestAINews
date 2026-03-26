@@ -1,0 +1,34 @@
+name: Scrape and Process AI News
+
+on:
+  schedule:
+    - cron: '*/45 * * * *' # Every 45 minutes
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  scrape-and-process:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.49.0-noble # Pre-built with browsers to save installation time
+    
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install supabase
+
+      - name: Run Pipeline
+        run: python main.py

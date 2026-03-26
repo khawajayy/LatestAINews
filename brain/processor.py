@@ -14,8 +14,7 @@ def process_article(article):
     """
     Enriches an article with categorization, a 150-char summary, and a Hype Meter score.
     """
-    model = genai.GenerativeModel('gemini-1.5-pro') # User requested 3.1 Pro, but let's use the most advance available if 3.1 is not in the SDK yet.
-    # Actually, let's use 'gemini-1.5-pro' or 'gemini-1.5-flash' as per standard.
+    model = genai.GenerativeModel('gemini-2.0-flash-lite')
     
     prompt = f"""
     Analyze the following AI news story and provide a JSON response.

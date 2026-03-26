@@ -1,44 +1,35 @@
-"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NewsCard from "../components/NewsCard";
 import { Filter } from "lucide-react";
-
-const MOCK_DATA = [
-  {
-    title: "OpenAI Unveils Sora: A Revolutionary Text-to-Video Model",
-    summary: "Sora can generate highly detailed scenes with complex camera motion and multiple characters.",
-    category: "LLM",
-    hype_score: 4,
-    hype_label: "Balanced",
-    source: "OpenAI Blog",
-    url: "https://openai.com/sora"
-  },
-  {
-    title: "AGI Achieved Internal Leak: The End of Human Labor?",
-    summary: "Anonymous sources claim Internal Model X has reached superhuman reasoning capabilities.",
-    category: "AGENTS",
-    hype_score: 10,
-    hype_label: "Maximum Hype",
-    source: "X (@HypeNews)",
-    url: "https://x.com/rowancheung"
-  },
-  {
-    title: "Direct Preferences Optimization: A Technical Deep Dive",
-    summary: "Exploring the mathematical foundations of DPO for aligning large language models.",
-    category: "LLM",
-    hype_score: 1,
-    hype_label: "Pure Signal",
-    source: "ArXiv",
-    url: "https://arxiv.org/abs/2305.18290"
-  }
-];
+import { supabase } from "../utils/supabaseClient";
 
 export default function Home() {
+  const [news, setNews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [signalOnly, setSignalOnly] = useState(false);
 
+  useEffect(() => {
+    async function fetchNews() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching news:', error);
+      } else {
+        setNews(data || []);
+      }
+      setLoading(false);
+    }
+
+    fetchNews();
+  }, []);
+
   const filteredNews = signalOnly 
-    ? MOCK_DATA.filter(item => item.hype_score <= 5)
-    : MOCK_DATA;
+    ? news.filter(item => item.hype_score <= 5)
+    : news;
 
   return (
     <main className="dashboard-container">
@@ -69,9 +60,19 @@ export default function Home() {
       </section>
 
       <div className="news-grid">
-        {filteredNews.map((item, index) => (
-          <NewsCard key={index} item={item} />
-        ))}
+        {loading ? (
+          <div style={{ textAlign: 'center', gridColumn: '1 / -1', padding: '4rem', opacity: 0.5 }}>
+            <p className="animate-pulse">Loading AI Pulse signal...</p>
+          </div>
+        ) : filteredNews.length > 0 ? (
+          filteredNews.map((item, index) => (
+            <NewsCard key={index} item={item} />
+          ))
+        ) : (
+          <div style={{ textAlign: 'center', gridColumn: '1 / -1', padding: '4rem', opacity: 0.5 }}>
+            <p>No news found. Check back later.</p>
+          </div>
+        )}
       </div>
       
       <footer style={{ marginTop: '5rem', textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
