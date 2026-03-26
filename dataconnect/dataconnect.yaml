@@ -1,0 +1,12 @@
+# Firebase Data Connect configuration
+specVersion: "v1alpha"
+serviceId: "ai-pulse-service"
+location: "us-central1"
+schema:
+  datasource:
+    postgresql:
+      database: "ai_pulse_db"
+      cloudSql:
+        instanceId: "ai-pulse-instance"
+connector:
+  path: "./connector"
