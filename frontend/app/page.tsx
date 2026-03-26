@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import NewsCard from "../components/NewsCard";
 import { Filter } from "lucide-react";
