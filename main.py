@@ -10,10 +10,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+if not os.getenv("GEMINI_API_KEY"):
+    print("⚠️ Warning: GEMINI_API_KEY is missing. AI processing will likely fail.")
+
 # Initialize Supabase Client
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(url, key)
+
+if not url or not key:
+    print("❌ Error: SUPABASE_URL or SUPABASE_KEY environment variables are missing!")
+    exit(1)
+
+print(f"Connecting to Supabase at: {url}")
+try:
+    supabase: Client = create_client(url, key)
+    print("✅ Supabase client initialized.")
+except Exception as e:
+    print(f"❌ Failed to initialize Supabase client: {e}")
+    exit(1)
 
 def run_pipeline():
     print("🚀 Starting AI Pulse Pipeline...")
