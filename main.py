@@ -1,9 +1,8 @@
-import os
-import json
-from scrapers.hn_scraper import scrape_hn
-from scrapers.arxiv_scraper import scrape_arxiv
-from scrapers.blog_scraper import scrape_blogs
-from scrapers.x_scraper import scrape_x
+import asyncio
+from scrapers.hn_scraper import scrape_hn_ai
+from scrapers.arxiv_scraper import scrape_arxiv_ai
+from scrapers.blog_scraper import scrape_lab_blogs
+from scrapers.x_scraper import scrape_x_profile
 from brain.processor import process_article
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -29,32 +28,41 @@ except Exception as e:
     print(f"❌ Failed to initialize Supabase client: {e}")
     exit(1)
 
-def run_pipeline():
+async def run_pipeline():
     print("🚀 Starting AI Pulse Pipeline...")
     
     # 1. Scrape
     all_articles = []
     
     print("Scraping Hacker News...")
-    all_articles.extend(scrape_hn())
+    all_articles.extend(scrape_hn_ai())
     
     print("Scraping ArXiv...")
-    all_articles.extend(scrape_arxiv())
+    all_articles.extend(scrape_arxiv_ai())
     
     print("Scraping Blogs...")
-    all_articles.extend(scrape_blogs())
+    blog_articles = await scrape_lab_blogs()
+    all_articles.extend(blog_articles)
     
     # print("Scraping X...")
-    # all_articles.extend(scrape_x()) # X scraping might require special handling in Docker
+    # x_handles = ['rowancheung', 'GoogleDeepMind', 'OpenAI']
+    # for handle in x_handles:
+    #     x_articles = await scrape_x_profile(handle)
+    #     all_articles.extend(x_articles)
     
     print(f"Total raw articles: {len(all_articles)}")
     
-    # 2. Process & Deduplicate (Simple uniqueness check by URL)
+    # 2. Process & Deduplicate
     processed_count = 0
     for article in all_articles:
         # Check if already in Supabase
-        existing = supabase.table("articles").select("url").eq("url", article['url']).execute()
-        if existing.data:
+        # We use URL as unique identifier
+        try:
+            existing = supabase.table("articles").select("url").eq("url", article['url']).execute()
+            if existing.data:
+                continue
+        except Exception as e:
+            print(f"Error checking existence: {e}")
             continue
             
         print(f"Processing: {article['title'][:50]}...")
@@ -79,4 +87,4 @@ def run_pipeline():
     print(f"✅ Pipeline complete. Processed {processed_count} new articles.")
 
 if __name__ == "__main__":
-    run_pipeline()
+    asyncio.run(run_pipeline())
